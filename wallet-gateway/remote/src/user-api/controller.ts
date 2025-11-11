@@ -36,6 +36,7 @@ import {
     PartyAllocationService,
 } from '../ledger/party-allocation-service.js'
 import { WalletSyncService } from '../ledger/wallet-sync-service.js'
+import { networkStatus } from '../utils.js'
 
 type AvailableSigningDrivers = Partial<
     Record<SigningProvider, SigningDriverInterface>
@@ -416,10 +417,22 @@ export const userController = (
                 const { userId, accessToken } = authContext!
                 const notifier = notificationService.getNotifier(userId)
 
+                const ledgerClient = new LedgerClient(
+                    new URL(network.ledgerApi.baseUrl),
+                    logger,
+                    false,
+                    accessToken
+                )
+                const status = await networkStatus(ledgerClient)
                 notifier.emit('onConnected', {
                     kernel: kernelInfo,
+                    status: {
+                        isAuthenticated: true,
+                        isConnected: status.isConnected,
+                        connectReason: status.reason ? status.reason : 'OK',
+                        networkId: network.id,
+                    },
                     sessionToken: accessToken,
-                    networkId: network.id,
                 })
 
                 return Promise.resolve({
